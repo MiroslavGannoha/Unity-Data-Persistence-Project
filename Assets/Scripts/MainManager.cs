@@ -1,5 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -12,20 +11,38 @@ public class MainManager : MonoBehaviour
 
     public Text ScoreText;
     public GameObject GameOverText;
-    
+
     private bool m_Started = false;
     private int m_Points;
-    
-    private bool m_GameOver = false;
 
-    
+    private bool m_GameOver = false;
+    public Text topScoreText;
+    public Text topScoreNameText;
+    public Text currentUserText;
+
+
     // Start is called before the first frame update
     void Start()
     {
+        currentUserText.text = DataManager.Instance.lastUsername;
+        var dataManager = DataManager.Instance;
+        int topUserScore = dataManager.userScores.Count > 0 ? dataManager.userScores[dataManager.userScores.Count - 1] : 0;
+        string topUserScoreName = dataManager.userScoreNames.Count > 0 ? dataManager.userScoreNames[dataManager.userScoreNames.Count - 1] : "";
+        if (topUserScore > 0 && topUserScoreName != "")
+        {
+            topScoreText.text = topUserScore.ToString();
+            topScoreNameText.text = topUserScoreName;
+        }
+        else
+        {
+            topScoreText.text = "";
+            topScoreNameText.text = "Not Found";
+        }
+
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
-        
-        int[] pointCountArray = new [] {1,1,2,2,5,5};
+
+        int[] pointCountArray = new[] { 1, 1, 2, 2, 5, 5 };
         for (int i = 0; i < LineCount; ++i)
         {
             for (int x = 0; x < perLine; ++x)
@@ -59,6 +76,10 @@ public class MainManager : MonoBehaviour
             {
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             }
+            else if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                SceneManager.LoadScene(0);
+            }
         }
     }
 
@@ -70,7 +91,14 @@ public class MainManager : MonoBehaviour
 
     public void GameOver()
     {
+        DataManager dataManager = DataManager.Instance;
         m_GameOver = true;
         GameOverText.SetActive(true);
+        var index = dataManager.userScores.BinarySearch(m_Points);
+        if (index < 0) index = ~index;
+        dataManager.userScores.Insert(index, m_Points);
+        dataManager.userScoreNames.Insert(index, dataManager.lastUsername);
+        var output = JsonUtility.ToJson(dataManager.userScores, true);
+        dataManager.SaveUserScoresData();
     }
 }
