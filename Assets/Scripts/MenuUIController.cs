@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using TMPro;
 using UnityEngine.UI;
+using System.Linq;
+
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -16,16 +18,33 @@ public class MenuUIController : MonoBehaviour
 {
     public TMP_InputField inputField;
     public Button startButton;
+    public Button resetButton;
+    public TMP_Text scoresText;
+    public TMP_Text scoreNamesText;
     // Start is called before the first frame update
     void Start()
     {
         inputField.onValueChanged.AddListener(delegate { ValueChangeCheck(); });
+        inputField.text = DataManager.Instance.lastUsername;
+        int index = 0;
+        foreach (string name in DataManager.Instance.userScoreNames.AsEnumerable().Reverse())
+        {
+            scoreNamesText.text += (++index).ToString() + " " + name + "\n";
+            if (index > 9) break;
+        }
+        index = 0;
+        foreach (int score in DataManager.Instance.userScores.AsEnumerable().Reverse())
+        {
+            index++;
+            scoresText.text += score + "\n";
+            if (index > 9) break;
+        }
     }
 
     private void ValueChangeCheck()
     {
         string username = inputField.text;
-        if (username.Length >= 3)
+        if (username.Length >= 3 && username.Length <= 8)
         {
             startButton.interactable = true;
         }
@@ -41,8 +60,19 @@ public class MenuUIController : MonoBehaviour
 
     }
 
+    public void ResetScoreBoard()
+    {
+        DataManager.Instance.userScoreNames = new List<string>();
+        DataManager.Instance.userScores = new List<int>();
+        DataManager.Instance.SaveUserScoresData();
+        scoresText.text = "";
+        scoreNamesText.text = "";
+    }
+
     public void StartNew()
     {
+        DataManager.Instance.lastUsername = inputField.text;
+        DataManager.Instance.SaveLastUserData();
         SceneManager.LoadScene(1);
     }
 
